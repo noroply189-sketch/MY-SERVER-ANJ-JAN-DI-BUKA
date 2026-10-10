@@ -17,6 +17,7 @@ from services.file_generator import (
     write_xlsx_file,
 )
 from services.file_reader import read_document, summarize_document
+from services.ai_router import AIRequest, router
 
 
 class FilesCog(commands.Cog):
@@ -56,6 +57,25 @@ class FilesCog(commands.Cog):
         await interaction.response.defer(thinking=True)
         output = write_docx_file(f"{title.replace(' ', '_')}.docx", [title, content])
         await interaction.followup.send(file=discord.File(str(output)))
+
+    @app_commands.command(name="create-cv")
+    @app_commands.describe(details="Your experience, education, skills, and target role")
+    async def create_cv(self, interaction: discord.Interaction, details: str) -> None:
+        await interaction.response.defer(thinking=True)
+        try:
+            cv_text = await router.route(AIRequest(
+                prompt=(
+                    "Create a truthful, polished CV using only these user-provided facts. "
+                    "Do not invent employers, dates, degrees, or achievements. Use clear headings "
+                    "and concise bullet points. User facts:\n" + details
+                ),
+                system_prompt="You are a professional CV editor. Preserve factual accuracy.",
+            ))
+            safe_name = "cv_" + str(interaction.user.id) + ".docx"
+            output = write_docx_file(safe_name, cv_text.splitlines())
+            await interaction.followup.send(file=discord.File(str(output)))
+        except Exception:
+            await interaction.followup.send("CV gagal dibuat. Coba lagi setelah provider AI tersedia.")
 
     @app_commands.command(name="make-excel")
     @app_commands.describe(title="File name", rows="Rows as CSV-like content")

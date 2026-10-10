@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -10,11 +11,37 @@ from services.ai_router import AIRequest, router
 from services.session_manager import session_manager
 
 settings = get_settings()
+logger = logging.getLogger(__name__)
 
 
 class ChatCog(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
+
+    @commands.Cog.listener()
+    async def on_message(self, message: discord.Message) -> None:
+        if message.author.bot:
+            return
+        if message.guild is not None and (self.bot.user is None or self.bot.user not in message.mentions):
+            return
+
+        prompt = message.content
+        if self.bot.user is not None:
+            prompt = prompt.replace(self.bot.user.mention, "").strip()
+        if not prompt:
+            return
+
+        try:
+            async with message.channel.typing():
+                response = await router.route(
+                    AIRequest(prompt=prompt, system_prompt="You are a helpful assistant.")
+                )
+            chunks = [response[index:index + 1900] for index in range(0, len(response), 1900)]
+            for chunk in chunks:
+                await message.reply(chunk, mention_author=False)
+        except Exception:
+            logger.exception("Direct-message AI request failed")
+            await message.reply("AI sedang tidak tersedia. Coba lagi sebentar.", mention_author=False)
 
     @app_commands.command(name="ask")
     @app_commands.describe(question="Ask the AI a question")
