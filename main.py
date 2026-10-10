@@ -2,14 +2,17 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import traceback
-from pathlib import Path
 
 import discord
+import uvicorn
 from discord.ext import commands
 
 from config.settings import get_settings
 from database.db import initialize_database
+from web.admin import app as admin_app
+from workers.monitoring_worker import monitoring_loop
 
 settings = get_settings()
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -64,7 +67,20 @@ async def main() -> None:
 
     await initialize_database()
     await load_cogs()
-    await bot.start(settings.discord_token)
+    admin_app.state.bot = bot
+    monitor_task = asyncio.create_task(monitoring_loop(), name="vps-monitor")
+    dashboard = uvicorn.Server(uvicorn.Config(
+        admin_app,
+        host="0.0.0.0",
+        port=int(os.getenv("PORT", "8000")),
+        log_level="info",
+        access_log=False,
+    ))
+    try:
+        await asyncio.gather(bot.start(settings.discord_token), dashboard.serve())
+    finally:
+        monitor_task.cancel()
+        await asyncio.gather(monitor_task, return_exceptions=True)
 
 
 if __name__ == "__main__":

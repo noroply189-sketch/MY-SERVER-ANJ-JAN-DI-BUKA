@@ -15,7 +15,7 @@ async def monitoring_loop(interval_seconds: int | None = None) -> None:
     interval = interval_seconds or settings.vps_monitor_interval_seconds
     while True:
         try:
-            snapshot = collect_vps_snapshot()
+            snapshot = await asyncio.to_thread(collect_vps_snapshot)
             await record_snapshot(snapshot)
             logger.info("Recorded VPS snapshot: %s", snapshot.get("status"))
         except Exception as exc:

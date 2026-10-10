@@ -84,4 +84,8 @@ Use the application command deployment in `main.py` with the configured `DISCORD
 ## Notes
 
 Some features require real external API keys and network access. They remain disabled or fail gracefully until configured.
+
+## Railway admin dashboard
+
+Set `ADMIN_USERNAME` and `ADMIN_PASSWORD` as Railway service variables before deployment. The dashboard is served by the same process on Railway's `PORT`; open the service's public domain over HTTPS and authenticate with those credentials. The read-only overview reports metrics for the Railway container and history stored in SQLite. Railway's filesystem is ephemeral unless a volume is attached, so SQLite history is not durable across replacement deployments without a volume. This dashboard does not control external VPS instances or perform Pterodactyl sales.
 "# my-server-" 

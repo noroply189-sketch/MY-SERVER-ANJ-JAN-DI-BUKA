@@ -15,6 +15,8 @@ class Settings:
     discord_client_id: str = os.getenv("DISCORD_CLIENT_ID", "")
     discord_guild_id: str | None = os.getenv("DISCORD_GUILD_ID") or None
     admin_ids: set[int] = frozenset(int(item.strip()) for item in os.getenv("ADMIN_IDS", "").split(",") if item.strip())
+    admin_username: str = os.getenv("ADMIN_USERNAME", "")
+    admin_password: str = os.getenv("ADMIN_PASSWORD", "")
 
     openrouter_api_key: str = os.getenv("OPENROUTER_API_KEY", "")
     openrouter_model: str = os.getenv("OPENROUTER_MODEL", "openai/gpt-4o-mini")
